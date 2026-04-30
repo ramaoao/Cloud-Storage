@@ -1,0 +1,83 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260418-02-create-resources
+      author: rama
+      changes:
+        - createTable:
+            tableName: resources
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_resources_users
+                    references: users(id)
+              - column:
+                  name: parent_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_resources_parent
+                    references: resources(id)
+                    deleteCascade: true
+
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: size
+                  type: bigint
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: object_key
+                  type: uuid
+                  constraints:
+                    unique: true
+              - column:
+                  name: version
+                  type: bigint
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uc_user_parent_name
+              ON resources (user_id, parent_id, LOWER(name))
+              WHERE parent_id IS NOT NULL AND status IN ('READY', 'UPLOADING');
+
+        - sql:
+            sql: >
+              CREATE UNIQUE INDEX uc_user_root_name
+              ON resources (user_id, LOWER(name))
+              WHERE parent_id IS NULL AND status IN ('READY', 'UPLOADING');
+
+      rollback:
+        - dropTable:
+            tableName: resources

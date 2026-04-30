@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260420-01-enable-pg-trgm
+      author: rama
+      changes:
+        - sql:
+            sql: CREATE EXTENSION IF NOT EXISTS pg_trgm
+
+  - changeSet:
+      id: 20260420-02-resources-user-status-index
+      author: rama
+      changes:
+        - sql:
+            sql: CREATE INDEX IF NOT EXISTS inx_resources_user_status
+                 ON resources (status, updated_at)
+
+        - sql:
+            sql: CREATE INDEX IF NOT EXISTS inx_resources_parent_id
+              ON resources (parent_id)
+
+  - changeSet:
+      id: 20260420-03-resources-search-trgm-index
+      author: rama
+      runInTransaction: false
+      changes:
+        - sql:
+            sql: CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_resources_ready_name_trgm
+                 ON resources
+                 USING GIN (name gin_trgm_ops)
+                 WHERE status = 'READY'
+
+  - changeSet:
+      id: 20260420-04-resources-contents-index
+      author: rama
+      changes:
+        - sql:
+            sql: CREATE INDEX IF NOT EXISTS idx_resources_ready_contents
+                 ON resources (user_id, parent_id, type DESC, name ASC)
+                 WHERE status = 'READY'

@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18.1-alpine
+    container_name: postgres-database
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --requirepass 1122
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: 12345678
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+      MINIO_API_CORS_ALLOW_HEADERS: "Content-Type,x-amz-*,authorization"
+      MINIO_API_CORS_ALLOW_METHODS: "GET,PUT,POST,DELETE,OPTIONS"
+      MINIO_API_CORS_EXPOSE_HEADERS: "ETag,x-amz-*"
+    command: server /data --console-address ":9001"
+    ports:
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: "" # путь к бэку
+    container_name: backend
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/postgres
+      - SPRING_DATA_REDIS_HOST=redis
+      - APP_MINIO_ENDPOINT=http://minio:9000
+      - APP_MINIO_PUBLIC_ENDPOINT=http://localhost
+      - APP_CORS_ALLOWED_ORIGINS=*
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: "" # путь к фронту
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260418-01-create-users
+      author: rama
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: password
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+        - sql:
+            sql: CREATE UNIQUE INDEX idx_users_username_lower ON users (LOWER(username));
+
+      rollback:
+        - dropTable:
+            tableName: users
